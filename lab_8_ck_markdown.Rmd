@@ -48,12 +48,49 @@ df_loc <- oil_spills %>%
 
 colnames(df_loc) <- c("latitude", "longitude", "net_loss")
 
-oil_sf <- st_as_sf(df_loc, coords = c("longitude", "latitude"), crs = 4326)
+oil_sf <- st_as_sf(df_loc, coords = c("longitude", "latitude"), crs = 4326) #not all spatial things will automatically search for longitude latitude, some things need you to do it
 
 leaflet(oil_sf) %>% 
   addTiles %>% 
   addMarkers()
-  
+
+```
+
+##tmap plot with the Texas state shapefile
+Sometimes we cant use this base map with leaflet, we need an actual shapefile
+```{r}
+
+states <- st_read(dsn = ".", layer = "states") #bc its alrady in our pathway
+#now I can treat this information as a data frame. I can use my data frame functions like filter, select, etc. and it will keep spatial geometry stuff with it!
+
+tex_boarder <- states %>% 
+  filter(STATE_NAME == "Texas") %>% 
+  st_transform(4326)
+
+plot(tex_boarder)
+
+tm_shape(tex_boarder) + #plot the texas boarder as a polygon
+  tm_polygons() +
+  tm_shape(oil_sf) +
+  tm_dots(size = 0.3)
+
+```
+
+###Convert the data to spatial points patters (combination of point data and the bounding window bc we need to have a bounding window to evaluate them within)
+we have to convert them into point data with a window that the current functions in r will work with (hopefuly, in the future, you wont have to do this)
+
+```{r}
+
+spill_sp <- as(oil_sf, "Spatial") #converted from simple features back to origional df. but r still doesnt recognize this as data that you want to do point analysis with
+spill_ppp <- as(spill_sp, "ppp") #ppp is point pattern p
+
+#state of texas outline is our bounding window:
+tx_sp <- as(tex_boarder, "Spatial")
+tx_owin <- as(tx_sp, "owin") #now it recognizes it as a window!
+
+all_ppp <- ppp(spill_ppp$x, spill_ppp$y, window = tx_owin) #ppp fncn in the spatial stats package for creating point pattern
+
+#4 points were rejected bc they were ouside of the boundary window
 
 ```
 
