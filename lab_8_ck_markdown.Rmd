@@ -1,0 +1,41 @@
+---
+title: "Lab Week 8"
+author: "Charlene Kormondy"
+date: "March 8, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+###Load the packages
+```{r}
+library(tidyverse)
+library(sf)
+library(tmap)
+library(leaflet)
+library(spatstat)
+library(maptools)
+
+
+```
+
+
+###Column graph of Texas Oil Spills
+```{r}
+
+oil_spills <- read_csv("oil_spills.csv")
+
+df <- oil_spills %>% 
+  filter(`Accident State` == "TX" & `Accident Year` < 2017) %>%  #have to bound it by angled apostrophies bc it has spaces in it
+  group_by(`Accident Year`) %>% 
+  summarise(Loss = sum (`Net Loss (Barrels)`)) #allows you to apply 1 or more functions to a dataset that is grouped
+
+colnames(df) <- c("Year", "Loss")
+
+ggplot(df, aes(x = Year, y = Loss)) +
+  geom_col()
+
+```
+
