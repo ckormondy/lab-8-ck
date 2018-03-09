@@ -94,3 +94,61 @@ all_ppp <- ppp(spill_ppp$x, spill_ppp$y, window = tx_owin) #ppp fncn in the spat
 
 ```
 
+###A density plot:
+```{r}
+plot(density(all_ppp, sigma = 0.4)) #density plots are easy to make but can change a story. sigma = 1 and sigma = 0.1 is very different. You need a meaningful way to decide what you bandwidth (sigma) should be.
+```
+
+###Quadrat test for spatial evenness
+Recall: it tests for spatial evenness (even though r says it tessts for spatial randomness)
+```{r}
+oil_qt <- quadrat.test(all_ppp, nx = 5, ny = 5) #5 regions that exist horizontally and 5 regions vertically
+#this is a hypothesis test
+oil_qt #we got a small p value. look at the data and we can tell that they are not csr observations (they dont look random because we see clustering and large blank areas)
+#null: data point patters follow csr. we will reject the null and retain alt hypothesis that the data are not csr (not evenly distributed)
+
+plot(all_ppp)
+plot(oil_qt, add = TRUE, cex = 0.4) #plot the quadrat test
+#if this region was spatially distributed, it whould have 14.5 in it. it also calculates the proportion of spatial area and for example, says there should be 11.6 total events in this quadrant. Upper right is expected ct, upper left is actual count, bottom number tells you have many sds higher or lower it is than the expected number
+
+```
+
+if data are clustered, the nearest neighbors will be closer on average than if they are evenly distributed. 
+
+###G-Function for Nearest Neighbor Analysis
+step 1: make a sewquence of values for r. Allison already found out what the best span is. In the future, we may need to figure this distance out for ourselves.
+```{r}
+
+r <- seq(0,1, by = 0.01)
+
+#based on poison distrib, what would it look like if it were csr data?
+
+oil_gfun <- envelope(all_ppp, fun = Gest, r= r, nsim = 100) #if you wanted to use L or K, it'd be L or Kest. we called it r above but we could have called it lag or something.)
+
+#theoretical is theo col = model for csr, low and high cols
+
+ggplot(oil_gfun, aes(x = r, y = obs)) +
+  geom_line(color = "black") +
+  geom_line(aes(x = r, y = theo), color = "red")
+
+#this tells us that our observed data has a higher propotion of point pairs with neighbors at nearer distances compared to truley csr data
+
+```
+
+###Nearest neighbor using the L - function (Ripley's K, but standardized)
+```{r}
+
+r2 <- seq(0,3, by = 0.5)
+
+oil_lfun <- envelope(all_ppp, fun = Lest, r = r2, nsim = 20, global = TRUE) #this is more computationally intensive bc instead of just finding a simgle nearest neighbor, it makes increasing bubbles around it until it includes all observations. TRUE so it shows all obs
+
+ggplot(oil_lfun, aes(x = r2, y = obs)) +
+  geom_line(color = "black") +
+  geom_line(aes(x = r2, y = theo), color = "blue")
+
+```
+in 4 different ways, we determined that this is not csr data:
+1. map
+2. quadrat analysis told us we didnt have evenly distributed oil spills
+3. L = nearest neighbor
+4. K = global neighbors around them
